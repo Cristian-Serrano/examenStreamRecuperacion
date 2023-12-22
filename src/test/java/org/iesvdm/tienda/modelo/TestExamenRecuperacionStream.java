@@ -90,7 +90,12 @@ public class TestExamenRecuperacionStream {
 
             List<Pedido> list = pedidoHome.findAll();
 
-            //TODO STREAMS
+            List<String> listaEstados = list.stream()
+                    .map(pedido -> pedido.getEstado())
+                    .distinct()
+                    .collect(toList());
+
+            listaEstados.forEach(System.out::println);
 
 
             pedidoHome.commitTransaction();
@@ -113,10 +118,26 @@ public class TestExamenRecuperacionStream {
         try {
             clienteHome.beginTransaction();
 
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            /*Date ultimoDia2007 = sdf.parse("2007-12-31");
+            Date primerDia2009 = sdf.parse("2009-01-01");
+
             List<Cliente> list = clienteHome.findAll();
 
-            //TODO STREAMS
+            List<Integer> listaCodigos = list.stream()
+                    .filter((Cliente cliente) -> {
+                        boolean resultado = false;
+                        cliente.getPagos().forEach((Pago p) -> {
+                                resultado = p.getFechaPago().after(ultimoDia2007) && p.getFechaPago().before(primerDia2009);
+                            }
+                        );
+                        return resultado;
+                    })
+                    .map(cliente -> cliente.getCodigoCliente())
+                    .distinct()
+                    .collect(toList());
 
+            listaCodigos.forEach(System.out::println);*/
 
             clienteHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -143,7 +164,19 @@ public class TestExamenRecuperacionStream {
 
             List<Pedido> list = pedidoHome.findAll();
 
-            //TODO STREAMS
+            List<String> lista = list.stream()
+                    .filter((Pedido pedido) -> {
+                            if (pedido.getFechaEntrega() != null) {
+                                return pedido.getFechaEsperada().before(pedido.getFechaEntrega());
+                            }
+                            return false;
+                        }
+                    )
+                    .map(pedido ->
+                            "ID pedido: "+pedido.getCodigoPedido()+" ID cliente: "+pedido.getCliente().getCodigoCliente()+" Fecha esperada: "+pedido.getFechaEsperada()+" Fecha de entrega: "+((pedido.getFechaEntrega() != null)? pedido.getFechaEntrega():""))
+                    .collect(toList());
+
+            lista.forEach(System.out::println);
 
 
             pedidoHome.commitTransaction();
@@ -176,14 +209,27 @@ public class TestExamenRecuperacionStream {
 
         try {
             pedidoHome.beginTransaction();
-
             List<Pedido> list = pedidoHome.findAll();
 
-            //TODO STREAMS
-            list.stream().filter(pedido -> {
+            List<String> lista = list.stream()
+                    .filter((Pedido pedido) -> {
+
+                                if (pedido.getFechaEntrega() != null) {
+                                    return pedido.getFechaEntrega().before(pedido.getFechaEsperada()/* ¿menos dos dias? */);
+                                }
+                                return false;
+                            }
+                    )
+                    .map(pedido ->
+                            "ID pedido: "+pedido.getCodigoPedido()+" ID cliente: "+pedido.getCliente().getCodigoCliente()+" Fecha esperada: "+pedido.getFechaEsperada()+" Fecha de entrega: "+((pedido.getFechaEntrega() != null)? pedido.getFechaEntrega():""))
+                    .collect(toList());
+
+            lista.forEach(System.out::println);
+
+            /*list.stream().filter(pedido -> {
             //Completa con la prueba de aritmética de fechas previa el filtro y el stream.
                 return false;
-            });
+            });*/
 
             pedidoHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -206,14 +252,33 @@ public class TestExamenRecuperacionStream {
 
             List<Pago> list = pagoHome.findAll();
 
-            //TODO STREAMS
 
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date ultimoDia2007 = sdf.parse("2007-12-31");
+            Date primerDia2009 = sdf.parse("2009-01-01");
+
+            List<Pago> listaPagos = list.stream()
+                    .filter(
+                        (Pago pago) -> {
+                            return pago.getFechaPago().before(primerDia2009) && pago.getFechaPago().after(ultimoDia2007);
+                        }
+                    )
+                    .filter((Pago pago) -> {
+                        return pago.getFormaPago().equals("PayPal");
+                    })
+                    .sorted(Comparator.comparing((Pago pago) -> {return pago.getTotal();} ))
+                    .collect(toList());
+
+
+            listaPagos.forEach(System.out::println);
 
             pagoHome.commitTransaction();
         } catch (RuntimeException e) {
             e.printStackTrace();
             pagoHome.rollbackTransaction();
             throw e; // or display error message
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -229,7 +294,13 @@ public class TestExamenRecuperacionStream {
 
             List<Cliente> list = clienteHome.findAll();
 
-            //TODO STREAMS
+            List<String> listaRegiones = list.stream()
+                    .filter(cliente -> cliente.getPagos().isEmpty())
+                    .filter(cliente -> cliente.getRegion() != null)//no hace falta que devuelva los null
+                    .map(cliente -> cliente.getRegion())
+                    .collect(toList());
+
+            listaRegiones.forEach(System.out::println);
 
             clienteHome.commitTransaction();
         } catch (RuntimeException e) {
@@ -252,7 +323,11 @@ public class TestExamenRecuperacionStream {
 
             List<Cliente> list = clienteHome.findAll();
 
-            //TODO STREAMS
+            Long cantidad = list.stream()
+                    .filter(cliente -> cliente.getCiudad().equals("Madrid"))
+                    .count();
+
+            System.out.println(cantidad);
 
 
             clienteHome.commitTransaction();
@@ -275,8 +350,13 @@ public class TestExamenRecuperacionStream {
 
             List<Cliente> list = clienteHome.findAll();
 
-            //TODO STREAMS
+            String nombreCliente = list.stream()
+                    .sorted(Comparator.comparing((Cliente c) -> {return c.getLimiteCredito();}).reversed())
+                    .limit(1)
+                    .map(cliente -> cliente.getNombreCliente())
+                    .collect(toList()).get(0);
 
+            System.out.println(nombreCliente);
 
             clienteHome.commitTransaction();
         } catch (RuntimeException e) {
